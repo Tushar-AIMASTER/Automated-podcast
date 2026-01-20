@@ -1,0 +1,53 @@
+{% extends 'transcriber/base.html' %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Automated Podcast Transcription</h1>
+        <p class="col-md-8 fs-4">Convert long-form podcast audio into clean text, segment topics, and generate insights using GenAI.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Get Started</a>
+    </div>
+</div>
+
+<div class="row mb-5" id="about">
+    <div class="col-md-12">
+        <h2>About The Project</h2>
+        <p class="lead">This platform is designed to automate podcast transcription using OpenAI's Whisper model.</p>
+        <ul>
+            <li><strong>Audio Ingestion:</strong> Upload whole podcast files.</li>
+            <li><strong>Transcription:</strong> Accurate ASR using 'turbo' Whisper model.</li>
+            <li><strong>Human-in-the-Loop:</strong> Review and edit transcripts before finalizing.</li>
+            <li><strong>Export:</strong> Download finalized transcripts as PDF.</li>
+        </ul>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-12">
+        <h2>About Me</h2>
+        <p>I am a developer passionate about GenAI and ML pipelines. This project demonstrates end-to-end integration of Audio models into a web framework.</p>
+    </div>
+</div>
+
+<div class="row mb-5" id="contact">
+    <div class="col-md-6">
+        <h2>Contact Us</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label>Name</label>
+                {{ form.name }}
+            </div>
+            <div class="mb-3">
+                <label>Email</label>
+                {{ form.email }}
+            </div>
+            <div class="mb-3">
+                <label>Message</label>
+                {{ form.message }}
+            </div>
+            <button type="submit" class="btn btn-primary">Send Message</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
