@@ -1,19 +1,43 @@
 {% extends 'transcriber/base.html' %}
 {% block content %}
 <div class="container py-5">
-    <h2>Review: {{ podcast.title }}</h2>
-    <div class="alert alert-info">
-        <strong>GenAI Insights:</strong> Detected Language: {{ podcast.detected_language|upper }}
-    </div>
-    
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label class="form-label fw-bold">Verified Transcript & Topic Segments</label>
-            <textarea name="transcript_final" class="form-control" rows="20">{{ podcast.transcript_final }}</textarea>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="glass-card p-4">
+                <h3 class="fw-bold mb-4">Transcript Timeline</h3>
+                <div class="timeline-container" style="max-height: 600px; overflow-y: auto;">
+                    {% for segment in segments %}
+                    <div class="d-flex mb-3 border-bottom pb-2">
+                        <div class="me-3">
+                            <span class="badge bg-primary-subtle text-primary">
+                                {{ segment.start }}s - {{ segment.end }}s
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 text-muted">{{ segment.text }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary">Save & Verify Changes</button>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
-    </form>
+
+        <div class="col-md-4">
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold"><span class="text-primary">🧠</span> AI Topic Modeling</h5>
+                <p class="small text-muted">Detected via Matrix Factorization (NMF):</p>
+                <ul class="list-unstyled">
+                    {% for topic in mathematical_topics %}
+                    <li class="badge bg-light text-dark mb-2 d-block text-start p-2">{{ topic }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div class="glass-card p-4">
+                <h5 class="fw-bold">Executive Summary</h5>
+                <p class="small">{{ summary_text }}</p>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

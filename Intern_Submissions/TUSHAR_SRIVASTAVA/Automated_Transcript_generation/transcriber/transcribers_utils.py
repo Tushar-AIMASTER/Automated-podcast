@@ -2,27 +2,55 @@ import whisper
 import os
 
 from transformers import pipeline
+import whisper
+from transformers import pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import NMF, LatentDirichletAllocation
 
 # Using the turbo model identified in your logs
 MODEL_TYPE = "turbo" 
 
-def transcribe_audio(file_path):
-    """Processes whole podcast audio using the Whisper Turbo engine."""
+# 1. Initialize Intelligence Pipelines
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+
+def transcribe_with_timestamps(file_path):
+    """Fulfills the 'Segment-level timestamps' requirement."""
     try:
-        # load_model downloads weights to ~/.cache/whisper (~1.5GB)
-        model = whisper.load_model(MODEL_TYPE)
-        
-        # .transcribe() handles long-form audio automatically
+        model = whisper.load_model("turbo")
         result = model.transcribe(file_path)
-        return {
-            'text': result['text'],
-            'language': result.get('language', 'unknown')
-        }
+        
+        # Extract segments with timing
+        segments = []
+        for seg in result['segments']:
+            segments.append({
+                'start': round(seg['start'], 2),
+                'end': round(seg['end'], 2),
+                'text': seg['text']
+            })
+        return {'segments': segments, 'full_text': result['text']}
     except Exception as e:
-        print(f"ASR Error: {e}")
+        print(f"Transcription error: {e}")
         return None
 
-
+def perform_mathematical_topic_modeling(text, n_topics=3):
+    """
+    Implements NMF/LDA as a secondary intelligence layer.
+    NMF is often superior for short transcripts because it uses 
+    Matrix Factorization: $$V \approx WH$$
+    """
+    vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+    tfidf = vectorizer.fit_transform([text])
+    
+    # Using Non-Negative Matrix Factorization (NMF)
+    nmf = NMF(n_components=n_topics, random_state=1).fit(tfidf)
+    
+    feature_names = vectorizer.get_feature_names_out()
+    topics = []
+    for topic_idx, topic in enumerate(nmf.components_):
+        top_words = [feature_names[i] for i in topic.argsort()[:-5 - 1:-1]]
+        topics.append(f"Topic {topic_idx+1}: {', '.join(top_words)}")
+    
+    return topics
 
 # Initialize the summarization pipeline once (it will download on first run)
 # bart-large-cnn is excellent for abstractive summarization of long text
