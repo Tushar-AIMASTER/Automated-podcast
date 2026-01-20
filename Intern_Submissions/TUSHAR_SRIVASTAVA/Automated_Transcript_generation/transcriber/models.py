@@ -39,7 +39,7 @@ class Podcast(models.Model):
     # Timestamps for history and sorting
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    is_human_verified = models.BooleanField(default=False) # Fulfills Human Validation requirement
     def __str__(self):
         return f"{self.title} - {self.user.username}"
 

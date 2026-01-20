@@ -65,12 +65,15 @@ def upload_podcast(request):
             podcast.status = 'processing'
             podcast.save()
             
-            # Run transcription (Ideally this should be a background task like Celery)
+            # Step 1: ASR Transcription
             result = transcribe_audio(podcast.audio_file.path)
             
             if result:
+                # Step 2: GenAI Topic Segmentation
+                segmented_text = segment_topics(result['text'])
+                
                 podcast.transcript_raw = result['text']
-                podcast.transcript_final = result['text'] # Initialize final with raw
+                podcast.transcript_final = segmented_text
                 podcast.detected_language = result['language']
                 podcast.status = 'completed'
             else:
@@ -78,10 +81,6 @@ def upload_podcast(request):
             
             podcast.save()
             return redirect('dashboard')
-    else:
-        form = PodcastUploadForm()
-    return render(request, 'transcriber/upload.html', {'form': form})
-
 @login_required
 def transcript_detail(request, pk):
     podcast = get_object_or_404(Podcast, pk=pk, user=request.user)

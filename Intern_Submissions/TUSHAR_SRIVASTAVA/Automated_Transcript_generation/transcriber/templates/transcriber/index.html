@@ -8,16 +8,15 @@
         <a class="btn btn-primary btn-lg" href="{% url 'register' %}">Get Started</a>
     </div>
 </div>
-
-<div class="row mb-5" id="about">
+<div class="row mt-5">
     <div class="col-md-12">
-        <h2>About The Project</h2>
-        <p class="lead">This platform is designed to automate podcast transcription using OpenAI's Whisper model.</p>
-        <ul>
-            <li><strong>Audio Ingestion:</strong> Upload whole podcast files.</li>
-            <li><strong>Transcription:</strong> Accurate ASR using 'turbo' Whisper model.</li>
-            <li><strong>Human-in-the-Loop:</strong> Review and edit transcripts before finalizing.</li>
-            <li><strong>Export:</strong> Download finalized transcripts as PDF.</li>
+        <h3>System Architecture & Flow</h3>
+        <ul class="list-group">
+            <li class="list-group-item"><strong>1. Ingestion:</strong> Secure upload of raw podcast audio (MP3/WAV).</li>
+            <li class="list-group-item"><strong>2. ASR Engine:</strong> Full-stream transcription using Whisper Turbo.</li>
+            <li class="list-group-item"><strong>3. Logic Layer:</strong> LLM-assisted topic segmentation and summarization.</li>
+            <li class="list-group-item"><strong>4. Responsibility:</strong> Safety filters and confidence-based fallbacks.</li>
+            <li class="list-group-item"><strong>5. Human Review:</strong> Manual verification of transcripts before PDF export.</li>
         </ul>
     </div>
 </div>
