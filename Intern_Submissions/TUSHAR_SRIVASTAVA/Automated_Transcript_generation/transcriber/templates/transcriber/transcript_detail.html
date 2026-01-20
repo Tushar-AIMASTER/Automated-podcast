@@ -1,21 +1,19 @@
 {% extends 'transcriber/base.html' %}
-
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2>Review Transcript: {{ podcast.title }}</h2>
-        <p class="text-muted">Detected Language: {{ podcast.detected_language }}</p>
-        <hr>
-        
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label class="form-label"><strong>Edit Transcript (Human Supervision):</strong></label>
-                {{ form.transcript_final }}
-            </div>
-            <button type="submit" class="btn btn-success">Save Changes</button>
-            <a href="{% url 'download_pdf' podcast.pk %}" class="btn btn-outline-dark float-end">Download PDF</a>
-        </form>
+<div class="container py-5">
+    <h2>Review: {{ podcast.title }}</h2>
+    <div class="alert alert-info">
+        <strong>GenAI Insights:</strong> Detected Language: {{ podcast.detected_language|upper }}
     </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">Verified Transcript & Topic Segments</label>
+            <textarea name="transcript_final" class="form-control" rows="20">{{ podcast.transcript_final }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save & Verify Changes</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </form>
 </div>
 {% endblock %}
