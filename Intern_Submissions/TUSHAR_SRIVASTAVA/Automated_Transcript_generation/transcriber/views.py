@@ -68,19 +68,44 @@ def upload_podcast(request):
         form = PodcastUploadForm()
     return render(request, 'transcriber/upload.html', {'form': form})
 
-@login_required
+import io
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Podcast
+from .forms import TranscriptEditForm
+
 def transcript_detail(request, pk):
     podcast = get_object_or_404(Podcast, pk=pk, user=request.user)
+    
+    # PARSING LOGIC: Split the stored string back into pieces for the UI
+    raw_data = podcast.transcript_final or ""
+    summary_text = ""
+    topic_text = ""
+    main_content = ""
+
+    if "[[SUMMARY]]" in raw_data:
+        parts = raw_data.split("[[SUMMARY]]")[1].split("[[TOPICS]]")
+        summary_text = parts[0].strip()
+        sub_parts = parts[1].split("[[CONTENT]]")
+        topic_text = sub_parts[0].strip()
+        main_content = sub_parts[1].strip()
+
+    # Form handling
     if request.method == 'POST':
         form = TranscriptEditForm(request.POST, instance=podcast)
         if form.is_valid():
             form.save()
-            messages.success(request, "Transcript verified and saved!")
             return redirect('dashboard')
     else:
         form = TranscriptEditForm(instance=podcast)
-    return render(request, 'transcriber/transcript_detail.html', {'podcast': podcast, 'form': form})
 
+    context = {
+        'podcast': podcast,
+        'form': form,
+        'summary_text': summary_text,
+        'mathematical_topics': [topic_text], # List for the template loop
+        'main_content': main_content,
+    }
+    return render(request, 'transcriber/transcript_detail.html', context)
 @login_required
 def download_pdf(request, pk):
     podcast = get_object_or_404(Podcast, pk=pk, user=request.user)

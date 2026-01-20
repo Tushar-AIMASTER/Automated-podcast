@@ -1,88 +1,58 @@
 import whisper
-import os
-
 from transformers import pipeline
-import whisper
-from transformers import pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import NMF, LatentDirichletAllocation
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.decomposition import NMF, LatentDirichletAllocation, TruncatedSVD
 
-# Using the turbo model identified in your logs
-MODEL_TYPE = "turbo" 
-
-# 1. Initialize Intelligence Pipelines
+# Using the pipeline method for abstractive summarization
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-def transcribe_with_timestamps(file_path):
-    """Fulfills the 'Segment-level timestamps' requirement."""
+def transcribe_audio(file_path):
     try:
         model = whisper.load_model("turbo")
         result = model.transcribe(file_path)
-        
-        # Extract segments with timing
-        segments = []
-        for seg in result['segments']:
-            segments.append({
-                'start': round(seg['start'], 2),
-                'end': round(seg['end'], 2),
-                'text': seg['text']
-            })
-        return {'segments': segments, 'full_text': result['text']}
+        # Format segments for the Timeline UI
+        formatted_segments = []
+        for s in result['segments']:
+            formatted_segments.append(f"[{int(s['start'])}s] {s['text'].strip()}")
+            
+        return {
+            'text': result['text'],
+            'language': result.get('language', 'en'),
+            'segments_list': formatted_segments # Helper for storage
+        }
     except Exception as e:
-        print(f"Transcription error: {e}")
+        print(f"ASR Error: {e}")
         return None
 
-def perform_mathematical_topic_modeling(text, n_topics=3):
-    """
-    Implements NMF/LDA as a secondary intelligence layer.
-    NMF is often superior for short transcripts because it uses 
-    Matrix Factorization: $$V \approx WH$$
-    """
-    vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
-    tfidf = vectorizer.fit_transform([text])
-    
-    # Using Non-Negative Matrix Factorization (NMF)
-    nmf = NMF(n_components=n_topics, random_state=1).fit(tfidf)
-    
-    feature_names = vectorizer.get_feature_names_out()
-    topics = []
-    for topic_idx, topic in enumerate(nmf.components_):
-        top_words = [feature_names[i] for i in topic.argsort()[:-5 - 1:-1]]
-        topics.append(f"Topic {topic_idx+1}: {', '.join(top_words)}")
-    
-    return topics
-
-# Initialize the summarization pipeline once (it will download on first run)
-# bart-large-cnn is excellent for abstractive summarization of long text
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-
-
 def segment_and_summarize(text):
-    """
-    Fulfills GenAI Lab requirements using a real Transformer model.
-    Based on the pipeline inference method in summarization.py.
-    """
-    try:
-        # 1. Generate the Summary
-        # We truncate the input to 1024 tokens (standard for many models) 
-        # to prevent memory errors on very long podcasts.
-        summary_result = summarizer(
-            text[:3000],  # Use the first ~3000 characters for the executive summary
-            max_length=150, 
-            min_length=50, 
-            do_sample=False
-        )
-        summary_text = summary_result[0]['summary_text']
-        
-        # 2. Format the Output
-        header = "### AI EXECUTIVE SUMMARY\n"
-        body = f"{summary_text}\n\n"
-        segments_header = "### LOGICAL TOPIC SEGMENTS\n"
-        
-        # In a more advanced version, you could chunk the text 
-        # and summarize each section for true "Topic Segmentation."
-        return f"{header}{body}{segments_header}{text}"
+    """Integrates LLM Summary and Math Topic Modeling."""
+    if not text: return ""
 
-    except Exception as e:
-        print(f"Summarization error: {e}")
-        return f"### AI SUMMARY ERROR\n{text}"
+    # 1. LLM Abstractive Summary
+    try:
+        summary = summarizer(text[:3000], max_length=130, min_length=30, do_sample=False)[0]['summary_text']
+    except: summary = "Summary generation failed."
+
+    # 2. Topic Modeling (NMF, LDA, LSA)
+    topics = _run_all_topic_models(text)
+
+    # 3. Combine into a structured string using specific markers for the View to parse
+    return f"[[SUMMARY]]\n{summary}\n\n[[TOPICS]]\n{topics}\n\n[[CONTENT]]\n{text}"
+
+def _run_all_topic_models(text):
+    """Runs NMF, LDA, and LSA Topic Modeling."""
+    try:
+        tfidf_vect = TfidfVectorizer(stop_words='english')
+        tfidf = tfidf_vect.fit_transform([text])
+        words = tfidf_vect.get_feature_names_out()
+
+        # NMF - Non-Negative Matrix Factorization
+        nmf = NMF(n_components=1, random_state=1).fit(tfidf)
+        nmf_words = [words[i] for i in nmf.components_[0].argsort()[-3:]]
+
+        # LSA - Latent Semantic Analysis (Truncated SVD)
+        lsa = TruncatedSVD(n_components=1, random_state=1).fit(tfidf)
+        lsa_words = [words[i] for i in lsa.components_[0].argsort()[-3:]]
+
+        return f"NMF: {', '.join(nmf_words)} | LSA: {', '.join(lsa_words)}"
+    except: return "No topics detected."
